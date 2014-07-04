@@ -30,16 +30,14 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        for (int i = 0; i < 50; i++) {
-            MyCell cell = new MyCell();
-            cell.name = "Cell No." + Integer.toString(i);
-            mAnimList.add(cell);
-        }
-
-        mMyAnimListAdapter = new MyAnimListAdapter(this, R.layout.chain_cell, mAnimList);
         mAniListView = (ListView) findViewById(R.id.chainListView);
-        mAniListView.setAdapter(mMyAnimListAdapter);
+
+        setAdapter();
+
+    }
+
+    public ListView getListView() {
+        return mAniListView;
     }
 
     @Override
@@ -49,28 +47,44 @@ public class MainActivity extends Activity {
         return true;
     }
 
+    private void setAdapter() {
+        mAnimList.clear();
+        for (int i = 0; i < 30; i++) {
+            MyCell cell = new MyCell();
+            cell.name = "列表：" + Integer.toString(i);
+            mAnimList.add(cell);
+        }
+        mMyAnimListAdapter = new MyAnimListAdapter(this, R.layout.chain_cell, mAnimList);
+        mAniListView.setAdapter(mMyAnimListAdapter);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // TODO Auto-generated method stub
+        final int index = mAniListView.getCount();
+        if (index > 1) {
+            final Handler mymHandler = new Handler();
+            Runnable aRunnable = new Runnable() {
 
-        final Handler mymHandler = new Handler();
-        Runnable aRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    // TODO Auto-generated method stub
+                    if (mAniListView.getCount() <= 1) return;
+                    deleteCell(mAniListView.getChildAt(0), 0);
+                    mymHandler.postDelayed(this, AnimationBuilde.ANIMATION_DURATION * 3
+                            );
+                }
+            };
+            mymHandler.post(aRunnable);
+        } else {
+            setAdapter();
+        }
 
-            @Override
-            public void run() {
-                // TODO Auto-generated method stub
-                int index = mAniListView.getCount();
-                if (index <= 0) return;
-                deleteCell(mAniListView.getChildAt(0), 0);
-                mymHandler.postDelayed(this, AnimationBuilde.ANIMATION_DURATION * 3
-                        );
-            }
-        };
-        mymHandler.post(aRunnable);
         return super.onOptionsItemSelected(item);
     }
 
     private void deleteCell(final View v, final int index) {
+        if (v == null) return;
         AnimatorSet animatorSet = AnimationBuilde.buildListRemoveAnimator(v, mAnimList, mMyAnimListAdapter,
                 index);
         animatorSet.start();
@@ -84,6 +98,10 @@ public class MainActivity extends Activity {
         private LayoutInflater mInflater;
         private int resId;
 
+        private int mFirstAnimatedPosition = -1;
+        private int mLastAnimatedPosition;
+        private long mAnimationStartMillis = -1;
+
         public MyAnimListAdapter(Context context, int textViewResourceId, List<MyCell> objects) {
             super(context, textViewResourceId, objects);
             this.resId = textViewResourceId;
@@ -93,12 +111,13 @@ public class MainActivity extends Activity {
         @Override
         public View getView(final int position, View convertView, ViewGroup parent) {
             final View view;
+
             ViewHolder vh;
             MyCell cell = (MyCell) getItem(position);
-
             if (convertView == null) {
                 view = mInflater.inflate(R.layout.chain_cell, parent, false);
                 setViewHolder(view);
+
             }
             else if (((ViewHolder) convertView.getTag()).needInflate) {
                 view = mInflater.inflate(R.layout.chain_cell, parent, false);
@@ -108,6 +127,15 @@ public class MainActivity extends Activity {
                 view = convertView;
             }
 
+            if (position > mLastAnimatedPosition) {
+                if (mFirstAnimatedPosition == -1) {
+                    mFirstAnimatedPosition = position;
+                }
+                AnimatorSet set = AnimationBuilde.buildShowAnimatorList(parent, getListView(), view,
+                        mAnimationStartMillis, mLastAnimatedPosition, mFirstAnimatedPosition);
+                set.start();
+                mLastAnimatedPosition = position;
+            }
             vh = (ViewHolder) view.getTag();
             vh.text.setText(cell.name);
             vh.imageButton.setOnClickListener(new OnClickListener() {
