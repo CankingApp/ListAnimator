@@ -5,6 +5,7 @@ import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Resources.Theme;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
@@ -14,6 +15,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -26,14 +28,81 @@ public class MainActivity extends Activity {
     private MyAnimListAdapter mMyAnimListAdapter;
     private ListView mAniListView;
 
+    private Button mChangeButton, mPrecentBtn;
+    private CircleProgressBarView mCircleProgressBarView;
+    private RotateView mRotateView;
+    Handler mHandler = new Handler();
+    private int mPrecent;
+    private Runnable mRunnable;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mAniListView = (ListView) findViewById(R.id.chainListView);
-
+        iniView();
         setAdapter();
+    }
 
+    private void iniView() {
+        mChangeButton = (Button) findViewById(R.id.change);
+        mCircleProgressBarView = (CircleProgressBarView) findViewById(R.id.circle);
+        mRotateView = (RotateView) findViewById(R.id.rotate);
+        mPrecentBtn = (Button) findViewById(R.id.precent);
+        mPrecentBtn.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                mHandler.removeCallbacks(mRunnable);
+            }
+        });
+        mChangeButton.setOnClickListener(new OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                circleToggle();
+            }
+        });
+    }
+
+    private void circleToggle() {
+        if (mRotateView.isRotating()) {
+            mRotateView.stopRotate();
+        } else {
+            mRotateView.startRotate();
+        }
+
+        if (mCircleProgressBarView.isInProgress()) {
+            mCircleProgressBarView.stopProgress();
+        } else {
+            mCircleProgressBarView.startProgress();
+            mHandler.post(mRunnable);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        // TODO Auto-generated method stub
+        super.onResume();
+
+        mRunnable = new Runnable() {
+
+            @Override
+            public void run() {
+
+                if (mPrecent <= 100) {
+                    mPrecent++;
+                } else {
+                    mPrecent = 1;
+                }
+                mCircleProgressBarView.setAppScanPercent(mPrecent);
+                mHandler.postDelayed(this, 20);
+            }
+        };
+        mHandler.post(mRunnable);
+        mCircleProgressBarView.setAppScanPercent(50);
     }
 
     public ListView getListView() {
